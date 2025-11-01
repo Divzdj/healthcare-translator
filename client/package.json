@@ -12,13 +12,13 @@
     "tailwind:init": "tailwindcss init -p"
   },
   "dependencies": {
+    "@emotion/react": "^11.11.0",
+    "@emotion/styled": "^11.11.0",
+    "@mui/material": "^5.15.11",
+    "axios": "^1.6.6",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "axios": "^1.6.6",
-    "react-speech-recognition": "^3.11.2",
-    "@mui/material": "^5.15.11",
-    "@emotion/react": "^11.11.0",
-    "@emotion/styled": "^11.11.0"
+    "react-speech-recognition": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

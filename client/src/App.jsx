@@ -1,4 +1,5 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 
 function App() {
   // --- Core State Management ---
@@ -7,11 +8,10 @@ function App() {
   const [translation, setTranslation] = useState("");
   const [loading, setLoading] = useState(false);
 
-  //  ---  Speech-to-Text ---
-  const [isRecording, setIsRecording] = useState(false);
-  const recognitionRef = useRef(null);
+  //  --- Speech-to-Text via react-speech-recognition ---
+  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
 
-  //  ---Speech Synthesis ---
+  //  --- Speech Synthesis ---
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   //  --- Translate Function ---
@@ -37,47 +37,9 @@ function App() {
     setLoading(false);
   };
 
-  //  --- Start Recording with Web Speech API ---
-  const startRecording = () => {
-    if (!("webkitSpeechRecognition" in window)) {
-      alert("Speech Recognition not supported in this browser. Use Chrome.");
-      return;
-    }
-
-    const recognition = new window.webkitSpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = "en-US";
-
-    recognition.onresult = (event) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        transcript += event.results[i][0].transcript;
-      }
-      setInputText(transcript);
-    };
-
-    recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      setIsRecording(false);
-    };
-
-    recognition.onend = () => {
-      setIsRecording(false);
-    };
-
-    recognition.start();
-    recognitionRef.current = recognition;
-    setIsRecording(true);
-  };
-
-  //  --- Stop Recording ---
-  const stopRecording = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsRecording(false);
-    }
-  };
+  //  --- Speech-to-Text Controls ---
+  const startListening = () => SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
+  const stopListening = () => SpeechRecognition.stopListening();
 
   //  --- Speak Translation using Speech Synthesis ---
   const speakTranslation = () => {
@@ -103,46 +65,57 @@ function App() {
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-  
+
     window.speechSynthesis.cancel(); // stop any ongoing speech
     window.speechSynthesis.speak(utterance);
   };
 
+  //  --- Check browser support ---
+  if (!browserSupportsSpeechRecognition) {
+    return <span>Browser does not support speech recognition. Use Chrome or Edge.</span>;
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300 p-4">
       <div className="app-container">
-        <h1 className="app-heading"> Healthcare Translator</h1>
+        <h1 className="app-heading">Healthcare Translator</h1>
 
-
-        {/*  Voice-to-Text Controls */}
+        {/* Voice-to-Text Controls */}
         <div className="flex justify-center gap-4 mb-4">
-          {!isRecording ? (
+          {!listening ? (
             <button
-              onClick={startRecording}
+              onClick={startListening}
               className="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition"
             >
-               Start Speaking
+              Start Speaking
             </button>
           ) : (
             <button
-              onClick={stopRecording}
+              onClick={stopListening}
               className="px-4 py-2 bg-red-600 text-white rounded-lg shadow hover:bg-red-700 transition"
             >
-               Stop
+              Stop
             </button>
           )}
+
+          <button
+            onClick={resetTranscript}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700 transition"
+          >
+            Reset
+          </button>
         </div>
 
-        {/*  Text Input */}
+        {/* Text Input */}
         <textarea
           className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
           rows="4"
           placeholder="Enter or speak text to translate..."
-          value={inputText}
+          value={transcript || inputText}
           onChange={(e) => setInputText(e.target.value)}
         />
 
-        {/*  Language Dropdown */}
+        {/* Language Dropdown */}
         <select
           className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
           value={targetLang}
@@ -156,16 +129,16 @@ function App() {
           <option value="Hindi">Hindi</option>
         </select>
 
-        {/*  Translate Button */}
+        {/* Translate Button */}
         <button
           onClick={handleTranslate}
-          disabled={loading || !inputText || !targetLang}
+          disabled={loading || !(transcript || inputText) || !targetLang}
           className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-900 transition disabled:opacity-50 mb-4"
         >
           {loading ? "Translating..." : "Translate"}
         </button>
 
-        {/*  Speak Translation */}
+        {/* Speak Translation */}
         {translation && (
           <div className="mt-4 p-4 bg-gray-100 border rounded-lg shadow-inner">
             <h2 className="font-semibold text-gray-700 mb-2">Translation:</h2>
@@ -176,7 +149,7 @@ function App() {
               disabled={isSpeaking}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700 transition"
             >
-              {isSpeaking ? " Speaking..." : " Speak Translation"}
+              {isSpeaking ? "Speaking..." : "Speak Translation"}
             </button>
           </div>
         )}
