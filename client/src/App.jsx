@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 
 function App() {
@@ -17,18 +17,18 @@ function App() {
     browserSupportsSpeechRecognition,
   } = useSpeechRecognition();
 
+  // --- Keep inputText updated with transcript while listening ---
+  useEffect(() => {
+    if (listening) setInputText(transcript);
+  }, [transcript, listening]);
+
   // --- Translation Function ---
   const handleTranslate = async () => {
-    console.log("Translate button clicked"); // ✅ Add this line
-    if (!inputText || !targetLang) {
-      console.log("Missing input or targetLang");
-      return;
-  }
+    const textToTranslate = inputText.trim();
+    if (!textToTranslate || !targetLang) return;
 
     setLoading(true);
     setTranslation("");
-
-    console.log("Translating:", { text: textToTranslate, targetLang }); // for debugging
 
     try {
       const response = await fetch(
@@ -65,7 +65,6 @@ function App() {
     }
 
     const utterance = new SpeechSynthesisUtterance(translation);
-
     const langMap = {
       arabic: "ar-SA",
       french: "fr-FR",
@@ -75,7 +74,6 @@ function App() {
     };
 
     utterance.lang = langMap[targetLang.toLowerCase()] || "en-US";
-
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
 
@@ -130,7 +128,7 @@ function App() {
           className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
           rows="4"
           placeholder="Enter or speak text to translate..."
-          value={listening ? transcript : inputText}
+          value={inputText}
           onChange={(e) => setInputText(e.target.value)}
         />
 
@@ -151,7 +149,7 @@ function App() {
         {/* Translate Button */}
         <button
           onClick={handleTranslate}
-          disabled={!inputText && !transcript || !targetLang || loading}
+          disabled={!inputText || !targetLang || loading}
           className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-900 transition disabled:opacity-50 mb-4"
         >
           {loading ? "Translating..." : "Translate"}
