@@ -1,84 +1,103 @@
 import React, { useState } from "react";
-import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
+import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 
 function App() {
-  // --- Core State Management ---
+  // --- Core State ---
   const [inputText, setInputText] = useState("");
   const [targetLang, setTargetLang] = useState("");
   const [translation, setTranslation] = useState("");
   const [loading, setLoading] = useState(false);
-
-  //  --- Speech-to-Text via react-speech-recognition ---
-  const { transcript, listening, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition();
-
-  //  --- Speech Synthesis ---
   const [isSpeaking, setIsSpeaking] = useState(false);
 
-  //  --- Translate Function ---
+  // --- Speech Recognition Hook ---
+  const {
+    transcript,
+    listening,
+    resetTranscript,
+    browserSupportsSpeechRecognition,
+  } = useSpeechRecognition();
+
+  // --- Translation Function ---
   const handleTranslate = async () => {
-    if (!inputText || !targetLang) return;
+    console.log("Translate button clicked"); // ✅ Add this line
+    if (!inputText || !targetLang) {
+      console.log("Missing input or targetLang");
+      return;
+  }
+
     setLoading(true);
     setTranslation("");
 
+    console.log("Translating:", { text: textToTranslate, targetLang }); // for debugging
+
     try {
-      const response = await fetch("https://healthcare-translator-server.onrender.com/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: inputText, targetLang }),
-      });
+      const response = await fetch(
+        "https://healthcare-translator-server.onrender.com/translate",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: textToTranslate, targetLang }),
+        }
+      );
 
       const data = await response.json();
       if (response.ok && data.translation) setTranslation(data.translation);
       else setTranslation("Translation failed. Please try again.");
     } catch (error) {
-      console.error(error);
-      setTranslation("Error connecting to the server.");                                                                                                
+      console.error("Translation error:", error);
+      setTranslation("Error connecting to the server.");
     }
     setLoading(false);
   };
 
-  //  --- Speech-to-Text Controls ---
-  const startListening = () => SpeechRecognition.startListening({ continuous: true, language: 'en-US' });
+  // --- Speech-to-Text Controls ---
+  const startListening = () =>
+    SpeechRecognition.startListening({ continuous: true, language: "en-US" });
   const stopListening = () => SpeechRecognition.stopListening();
 
-  //  --- Speak Translation using Speech Synthesis ---
+  // --- Speak Translation ---
   const speakTranslation = () => {
     if (!translation) return;
+
     if (!("speechSynthesis" in window)) {
       alert("Speech Synthesis not supported in this browser.");
       return;
     }
 
     const utterance = new SpeechSynthesisUtterance(translation);
-    utterance.lang =
-      targetLang.toLowerCase() === "arabic"
-        ? "ar-SA"
-        : targetLang.toLowerCase() === "french"
-        ? "fr-FR"
-        : targetLang.toLowerCase() === "spanish"
-        ? "es-ES"
-        : targetLang.toLowerCase() === "german"
-        ? "de-DE"
-        : targetLang.toLowerCase() === "hindi"
-        ? "hi-IN"
-        : "en-US";
+
+    const langMap = {
+      arabic: "ar-SA",
+      french: "fr-FR",
+      spanish: "es-ES",
+      german: "de-DE",
+      hindi: "hi-IN",
+    };
+
+    utterance.lang = langMap[targetLang.toLowerCase()] || "en-US";
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
 
-    window.speechSynthesis.cancel(); // stop any ongoing speech
+    window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   };
 
-  //  --- Check browser support ---
+  // --- Check browser support ---
   if (!browserSupportsSpeechRecognition) {
-    return <span>Browser does not support speech recognition. Use Chrome or Edge.</span>;
+    return (
+      <div className="p-4 text-red-600">
+        Browser does not support speech recognition. Use Chrome or Edge.
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-100 to-blue-300 p-4">
-      <div className="app-container">
-        <h1 className="app-heading">Healthcare Translator</h1>
+      <div className="app-container w-full max-w-lg">
+        <h1 className="app-heading text-2xl font-bold mb-6 text-center">
+          Healthcare Translator
+        </h1>
 
         {/* Voice-to-Text Controls */}
         <div className="flex justify-center gap-4 mb-4">
@@ -111,7 +130,7 @@ function App() {
           className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 mb-4"
           rows="4"
           placeholder="Enter or speak text to translate..."
-          value={transcript || inputText}
+          value={listening ? transcript : inputText}
           onChange={(e) => setInputText(e.target.value)}
         />
 
@@ -132,7 +151,7 @@ function App() {
         {/* Translate Button */}
         <button
           onClick={handleTranslate}
-          disabled={loading || !(transcript || inputText) || !targetLang}
+          disabled={!inputText && !transcript || !targetLang || loading}
           className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-900 transition disabled:opacity-50 mb-4"
         >
           {loading ? "Translating..." : "Translate"}
