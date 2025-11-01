@@ -21,7 +21,7 @@ function App() {
     setTranslation("");
 
     try {
-      const response = await fetch("http://localhost:5001/translate", {
+      const response = await fetch("https://healthcare-translator-server.onrender.com/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: inputText, targetLang }),
@@ -32,7 +32,7 @@ function App() {
       else setTranslation("Translation failed. Please try again.");
     } catch (error) {
       console.error(error);
-      setTranslation("Error connecting to the server.");
+      setTranslation("Error connecting to the server.");                                                                                                
     }
     setLoading(false);
   };
@@ -103,7 +103,7 @@ function App() {
 
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
-
+  
     window.speechSynthesis.cancel(); // stop any ongoing speech
     window.speechSynthesis.speak(utterance);
   };
