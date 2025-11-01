@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
 
 function App() {
@@ -17,14 +17,14 @@ function App() {
     browserSupportsSpeechRecognition,
   } = useSpeechRecognition();
 
-  // --- Keep inputText updated with transcript while listening ---
-  useEffect(() => {
+  // --- Keep inputText synced with transcript while recording ---
+  React.useEffect(() => {
     if (listening) setInputText(transcript);
   }, [transcript, listening]);
 
   // --- Translation Function ---
   const handleTranslate = async () => {
-    const textToTranslate = inputText.trim();
+    const textToTranslate = inputText || transcript;
     if (!textToTranslate || !targetLang) return;
 
     setLoading(true);
@@ -65,6 +65,7 @@ function App() {
     }
 
     const utterance = new SpeechSynthesisUtterance(translation);
+
     const langMap = {
       arabic: "ar-SA",
       french: "fr-FR",
@@ -74,6 +75,7 @@ function App() {
     };
 
     utterance.lang = langMap[targetLang.toLowerCase()] || "en-US";
+
     utterance.onstart = () => setIsSpeaking(true);
     utterance.onend = () => setIsSpeaking(false);
 
@@ -116,7 +118,10 @@ function App() {
           )}
 
           <button
-            onClick={resetTranscript}
+            onClick={() => {
+              resetTranscript();
+              setInputText(""); // Reset textarea as well
+            }}
             className="px-4 py-2 bg-gray-600 text-white rounded-lg shadow hover:bg-gray-700 transition"
           >
             Reset
@@ -149,7 +154,7 @@ function App() {
         {/* Translate Button */}
         <button
           onClick={handleTranslate}
-          disabled={!inputText || !targetLang || loading}
+          disabled={loading || !inputText || !targetLang}
           className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-800 text-white font-semibold rounded-lg shadow-lg hover:from-blue-700 hover:to-blue-900 transition disabled:opacity-50 mb-4"
         >
           {loading ? "Translating..." : "Translate"}
