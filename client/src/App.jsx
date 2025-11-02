@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import SpeechRecognition, { useSpeechRecognition } from "react-speech-recognition";
+import './App.css';
+
 
 function App() {
   // --- Core State ---
@@ -15,7 +17,7 @@ function App() {
     listening,
     resetTranscript,
     browserSupportsSpeechRecognition,
-  } = useSpeechRecognition();
+  } = useSpeechRecognition();  
 
   // --- Keep inputText synced with transcript while recording ---
   React.useEffect(() => {
