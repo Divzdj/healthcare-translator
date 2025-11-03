@@ -24,3 +24,5 @@ Web-based app that converts speech to text, translates in real-time using OpenAI
 - Multilingual translation
 - Audio playback
 - Mobile-first design
+## Live demo
+https://healthcare-translator-mu.vercel.app/
